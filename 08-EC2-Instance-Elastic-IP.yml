@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: A Basic EC2 Instance with Security Group
+
+Resources:
+  DevEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0dc2d3e4c0f9ebd18
+      InstanceType: t2.micro
+      KeyName: A4L
+      SecurityGroups:
+        - default
+        - !Ref SSHSecurityGroup
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH inbound from my machine
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 89.45.6.172/32
+        - IpProtocol: tcp
+          FromPort: '8080'
+          ToPort: '8080'
+          CidrIp: 89.45.6.172/32
+          
+  MyElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref DevEC2Instance
+
