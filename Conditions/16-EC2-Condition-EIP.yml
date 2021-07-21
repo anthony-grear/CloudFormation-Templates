@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: demo for condition !Equals to assign EIP to prod EC2
+
+Parameters:
+  EnvironmentName:
+    Description: Select the environment
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    ConstraintDescription: must be development or production
+  MyKeyName: 
+    Description: Select the key name
+    Type: AWS::EC2::KeyPair::KeyName
+
+Mappings:
+  MyRegionMap:
+    us-east-1:
+      HVM64: ami-0dc2d3e4c0f9ebd18
+    us-east-2:
+      HVM64: ami-0233c2d874b811deb
+  MyEnvironmentMap:
+    dev:
+      instanceType: t2.micro
+    prod:
+      instanceType: t2.small
+
+Conditions: 
+  CreateEIPForProd: !Equals [!Ref EnvironmentName, prod]
+
+Resources:
+  MyVMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - MyRegionMap
+        - !Ref 'AWS::Region'
+        - HVM64
+      InstanceType: !FindInMap
+        - MyEnvironmentMap
+        - !Ref EnvironmentName
+        - instanceType
+      KeyName: !Ref MyKeyName
+    
+
+  MyProdEIP:
+    Type: AWS::EC2::EIP
+    Condition: CreateEIPForProd
+    Properties:
+      InstanceId: !Ref MyVMInstance
