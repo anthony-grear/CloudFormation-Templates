@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: demo of the intrinsic function "Or"
+
+Parameters:
+  
+  EnvironmentName:
+    Description: Select the environment.
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+      - qa
+    ConstraintDescription: dev, prod, or qa must be selected as the environment
+
+Mappings: 
+  MyRegionMap:
+    us-east-1:
+      HVM64: ami-0dc2d3e4c0f9ebd18
+    us-east-2:
+      HVM64: ami-0233c2d874b811deb
+  
+  MyEnvironmentMap:
+    dev:
+      instanceType: t2.micro
+    prod:
+      instanceType: t2.small
+    qa:
+      instanceType: t2.medium
+  
+
+Conditions:
+  CreateEIPForProd: !Equals [!Ref EnvironmentName, prod]
+  CreateDevSecurityGroup: !Not [{Condition: CreateProdSecurityGroup}]
+  CreateProdSecurityGroup: !Equals [!Ref EnvironmentName, prod]
+  IfRegionUseKeyName: !And [!Or [!Equals [!Ref 'AWS::Region', us-east-1], !Equals [!Ref 'AWS::Region', us-east-2]], !Equals [!Ref EnvironmentName, dev]]
+
+Resources:
+  MyVMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - MyRegionMap
+        - !Ref 'AWS::Region'
+        - HVM64
+      InstanceType: !FindInMap
+        - MyEnvironmentMap
+        - !Ref EnvironmentName
+        - instanceType
+      KeyName: !If [IfRegionUseKeyName, A4L, cfn-key-1]
+      SecurityGroups: !If [CreateDevSecurityGroup, [!Ref DevEnvSecurityGroup], [!Ref ProdEnvSecurityGroup]]
+  
+  MyEIPForProd:
+    Type: AWS::EC2::EIP
+    Condition: CreateEIPForProd
+    Properties:
+      InstanceId: !Ref MyVMInstance
+  
+  DevEnvSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateDevSecurityGroup
+    Properties:
+      GroupDescription: Dev SSH from anywhere.
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+  
+  ProdEnvSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateProdSecurityGroup 
+    Properties:
+      GroupDescription: Prod SSH from anywhere.
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
