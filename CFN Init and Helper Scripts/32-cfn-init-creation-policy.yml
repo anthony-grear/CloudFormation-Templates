@@ -21,6 +21,9 @@ Resources:
           CidrIp: 0.0.0.0/0
   MyVMInstance:
     Type: AWS::EC2::Instance
+    CreationPolicy: 
+      ResourceSignal:
+        Timeout: PT5M
     Metadata:
       Comment: Deploy a simple tomcat application
       AWS::CloudFormation::Init:

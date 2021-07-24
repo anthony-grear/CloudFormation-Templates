@@ -21,6 +21,9 @@ Resources:
           CidrIp: 0.0.0.0/0
   MyVMInstance:
     Type: AWS::EC2::Instance
+    CreationPolicy: 
+      ResourceSignal:
+        Timeout: PT5M
     Metadata:
       Comment: Deploy a simple tomcat application
       AWS::CloudFormation::Init:
@@ -42,7 +45,7 @@ Resources:
               uid: "501"
               homeDir: "/tmp"
           sources:
-            /tmp: https://cfn-init-123321.s3.amazonaws.com/cfn/demo1.zip
+            /tmp: https://cfn-init-123321.s3.amazonaws.com/cfn/demo2.zip
           files:
             "/etc/cfn/cfn-hup.conf":
               content: !Sub |
