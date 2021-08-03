@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Root Stack Template
+
+Parameters:
+  MyKeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  MyVMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0000025f7c02a13b2
+      InstanceType: t2.micro
+      KeyName: !Ref MyKeyName
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo yum update
+          sudo yum -y erase java-1.7.0-openjdk.x86-64
+          sudo yum -y install java-1.8.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk-devel
+          sudo yum -y install tomcat8
+          service tomcat8 start
+          mkdir /usr/share/tomcat8/webapps/ROOT
+          touch /usr/share/tomcats8/webapps/ROOT/index.html
+          echo "Cloud Formation Tomcat8" > /usr/share/tomcat8/webapps/ROOT/index.html
+
+Outputs:
+  AppUrl: 
+    Description: Application URL to access
+    Value: !Sub 'http://${MyVMInstance.PublicDnsName}:8080/index.html'
