@@ -1,14 +1,15 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Create CodeDeploy Stack Template
 
+
 Parameters:
   ApplicationRepoName:
     Type: String
-    Description: Name of the repo which contains the rest application
+    Description: Name of the repo which contains Rest Application.
     Default: ccdemo
   ArtifactStoreS3Location:
     Type: String
-    Description: Name of S3 bucket
+    Description: Name of the S3 bucket to store CodePipeline artificat.
     Default: rest-apps-1232455
 
 Resources:
@@ -55,17 +56,17 @@ Resources:
                   - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}/*
                   - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}
 
-  BuildRestAppCFNProject:  
+  BuildRestAppCFNProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub BuildRestAppCFNProject-${AWS::StackName}
+      Name: !Sub BuildRestAppCFN-${AWS::StackName}
       Description: Build war file for rest application
-      ServiceRole: !GetAtt [CodeBuildRole, Arn]
-      Artifacts: 
+      ServiceRole: !GetAtt [ CodeBuildRole, Arn ]
+      Artifacts:
         Type: S3
         Location: !Ref ArtifactStoreS3Location
-        Name: !Sub BuildRestAppCFNProject-${AWS::StackName}
-        Packaging: ZIP
+        Name: !Sub BuildRestAppCFN-${AWS::StackName}
+        Packaging: ZIP        
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
@@ -76,7 +77,8 @@ Resources:
       TimeoutInMinutes: 15
       Tags:
         - Key: Name
-          Value: !Sub BuildRestAppCFNProject-${AWS::StackName}
+          Value: !Sub BuildRestAppCFN-${AWS::StackName}
+
 
   CodeDeployServiceRole:
     Type: 'AWS::IAM::Role'
@@ -111,17 +113,26 @@ Resources:
 
   CodeDeployApplication:
     Type: AWS::CodeDeploy::Application
-    Properties:
-      ApplicationName: !Sub RestApp-${AWS::StackName}         
+    Properties: 
+      ApplicationName: !Sub RestApp-${AWS::StackName}
       ComputePlatform: Server
 
-  CodeDeploymentGroup:
+  CodeDeployDeploymentGroup: 
     Type: AWS::CodeDeploy::DeploymentGroup
-    Properties:
+    Properties: 
       ApplicationName: !Ref CodeDeployApplication
-      Ec2TagFilters:
+      Ec2TagFilters: 
         - Key: Name
           Value: dev
           Type: "KEY_AND_VALUE"
-      ServiceRoleArn: !GetAtt [CodeDeployServiceRole, Arn]
+      ServiceRoleArn: !GetAtt [ CodeDeployServiceRole, Arn ]      
       DeploymentGroupName: !Sub DeploymentGroup-${AWS::StackName}
+      Deployment: 
+        Description: "Second Deploy"
+        IgnoreApplicationStopFailures: true
+        Revision:
+          RevisionType: S3
+          S3Location: 
+            Bucket: !Ref ArtifactStoreS3Location
+            Key: !Sub BuildRestAppCFN-${AWS::StackName}
+            BundleType: Zip
